@@ -21,7 +21,7 @@ export default function AdminBookings() {
     try {
       await api.patch(`/admin/bookings/${id}`, { status });
       toast.success("Updated");
-      load(); if (selected?.id === id) setSelected(null);
+      load(); if (selected?.id === id) { setSelected(null); setShowReschedule(false); }
     } catch (e) { toast.error(e.response?.data?.detail || "Failed"); }
   };
 
@@ -33,7 +33,7 @@ export default function AdminBookings() {
         payment_method: payMethod,
       });
       toast.success("Payment recorded");
-      load(); setSelected(null);
+      load(); setSelected(null); setShowReschedule(false);
     } catch (e) { toast.error(e.response?.data?.detail || "Failed"); }
   };
 
@@ -71,7 +71,7 @@ export default function AdminBookings() {
           </thead>
           <tbody>
             {items.map((b) => (
-              <tr key={b.id} onClick={() => { setSelected(b); setPayAmount(b.remaining_amount); }} className="border-t border-white/5 hover:bg-white/[0.02] cursor-pointer" data-testid={`admin-booking-${b.booking_number}`}>
+              <tr key={b.id} onClick={() => { setSelected(b); setPayAmount(b.remaining_amount || 0); setShowReschedule(false); setReschedDate(b.appointment_date); setReschedTime(b.start_time); }} className="border-t border-white/5 hover:bg-white/[0.02] cursor-pointer" data-testid={`admin-booking-${b.booking_number}`}>
                 <td className="px-4 py-3">
                   <div className="font-medium">{b.booking_number}</div>
                   <div className="text-white/50 text-xs">{b.service_name_snapshot}</div>
@@ -88,7 +88,7 @@ export default function AdminBookings() {
       </div>
 
       {selected && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-end md:items-center justify-center p-0 md:p-6" onClick={() => setSelected(null)}>
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-end md:items-center justify-center p-0 md:p-6" onClick={() => { setSelected(null); setShowReschedule(false); }}>
           <div className="card-lux p-6 w-full md:max-w-md rounded-b-none md:rounded-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-start justify-between">
               <div>

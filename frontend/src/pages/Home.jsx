@@ -67,7 +67,10 @@ export default function Home() {
   useEffect(() => {
     api.get("/services", { params: { featured: true } }).then((r) => setFeatured(unwrap(r) || []));
     api.get("/categories").then((r) => setCategories(unwrap(r) || []));
-    api.get("/reviews").then((r) => setReviews(unwrap(r) || []));
+    api.get("/google-reviews").then((r) => {
+      const d = unwrap(r);
+      setReviews(d?.reviews || []);
+    }).catch(() => setReviews([]));
     api.get("/settings").then((r) => setSettings(unwrap(r)));
   }, []);
 

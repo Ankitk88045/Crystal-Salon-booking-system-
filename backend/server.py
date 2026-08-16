@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import bcrypt
+import httpx
 import jwt
 from dotenv import load_dotenv
 from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request, status
@@ -260,6 +261,9 @@ class SettingsIn(BaseModel):
     review_url: Optional[str] = None
     social_instagram: Optional[str] = None
     social_facebook: Optional[str] = None
+    # Google reviews
+    google_place_id: Optional[str] = None
+    google_places_api_key: Optional[str] = None
     # promo popup
     promo_enabled: Optional[bool] = None
     promo_title: Optional[str] = None
@@ -408,25 +412,12 @@ SEED_COURSES = [
 
 
 async def seed_courses_if_empty() -> None:
-    if await db.courses.count_documents({}) == 0:
-        for idx, c in enumerate(SEED_COURSES):
-            await db.courses.insert_one({
-                "id": new_id(),
-                "slug": slugify(c["name"]),
-                "name": c["name"],
-                "duration": c["duration"],
-                "price": float(c["price"]),
-                "image_url": c["image_url"],
-                "description": c["description"],
-                "features": c["features"],
-                "display_order": idx,
-                "is_active": True,
-                "created_at": iso(now_utc()),
-            })
-        logger.info("Seeded academy courses")
+    """No demo courses — admin adds them from the panel."""
+    return
 
 
 async def seed_if_empty() -> None:
+    """Seed only admin + business settings. No demo services/categories/courses."""
     if not await db.business_settings.find_one({"id": "singleton"}):
         await db.business_settings.insert_one(DEFAULT_SETTINGS.copy())
     if not await db.profiles.find_one({"email": ADMIN_EMAIL}):
@@ -444,43 +435,6 @@ async def seed_if_empty() -> None:
             "updated_at": iso(now_utc()),
         })
         logger.info(f"Seeded admin {ADMIN_EMAIL}")
-    if await db.service_categories.count_documents({}) == 0:
-        cat_id_by_name: Dict[str, str] = {}
-        for idx, c in enumerate(SEED_CATEGORIES):
-            cid = new_id()
-            cat_id_by_name[c["name"]] = cid
-            await db.service_categories.insert_one({
-                "id": cid,
-                "name": c["name"],
-                "slug": slugify(c["name"]),
-                "description": f"Premium {c['name'].lower()} services at Crystal Makeover.",
-                "image_url": c["image_url"],
-                "display_order": idx,
-                "is_active": True,
-                "created_at": iso(now_utc()),
-            })
-        for idx, (name, cat, price, dur, img, feat, gender, desc) in enumerate(SEED_SERVICES):
-            await db.services.insert_one({
-                "id": new_id(),
-                "name": name,
-                "slug": slugify(name),
-                "category_id": cat_id_by_name[cat],
-                "category_name": cat,
-                "description": desc,
-                "price": float(price),
-                "offer_price": None,
-                "duration_minutes": dur,
-                "buffer_minutes": 15,
-                "image_url": img,
-                "is_active": True,
-                "is_featured": feat,
-                "display_order": idx,
-                "gender_policy": gender,
-                "terms": "Cancellation allowed up to 4 hours before appointment.",
-                "created_at": iso(now_utc()),
-                "updated_at": iso(now_utc()),
-            })
-        logger.info("Seeded categories & services")
 
 
 # ----------------------------- OTP store ----------------------------------
@@ -952,6 +906,61 @@ async def verify_payment(body: PaymentVerify, user=Depends(get_current_user)):
 
 
 # ---- reviews ----
+@api.get("/google-reviews")
+async def google_reviews():
+    """Returns Google reviews (via Places Details API) when configured.
+
+    Falls back to locally-approved reviews if no API key/place id is set.
+    Cached for 12 hours to avoid excess API calls.
+    """
+    s = await db.business_settings.find_one({"id": "singleton"}, {"_id": 0}) or DEFAULT_SETTINGS
+    place_id = (s.get("google_place_id") or "").strip()
+    key = (s.get("google_places_api_key") or "").strip()
+    if not place_id or not key:
+        items = await db.reviews.find({"status": "APPROVED"}, {"_id": 0}).sort("created_at", -1).limit(10).to_list(10)
+        return {"success": True, "data": {"source": "local", "rating": None, "total": len(items), "reviews": items}}
+    cache = await db.google_reviews_cache.find_one({"place_id": place_id})
+    if cache:
+        cached_at = datetime.fromisoformat(cache["cached_at"])
+        if (now_utc().replace(tzinfo=None) - cached_at.replace(tzinfo=None)).total_seconds() < 12 * 3600:
+            return {"success": True, "data": cache["data"]}
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            r = await client.get(
+                "https://maps.googleapis.com/maps/api/place/details/json",
+                params={"place_id": place_id, "fields": "reviews,rating,user_ratings_total", "key": key},
+            )
+        payload = r.json()
+        result = payload.get("result", {}) if isinstance(payload, dict) else {}
+        reviews = [
+            {
+                "customer_name": x.get("author_name"),
+                "rating": x.get("rating"),
+                "review_text": x.get("text"),
+                "profile_photo_url": x.get("profile_photo_url"),
+                "relative_time": x.get("relative_time_description"),
+                "created_at": iso(now_utc()),
+            }
+            for x in result.get("reviews", [])
+        ]
+        data = {
+            "source": "google",
+            "rating": result.get("rating"),
+            "total": result.get("user_ratings_total"),
+            "reviews": reviews,
+        }
+        await db.google_reviews_cache.update_one(
+            {"place_id": place_id},
+            {"$set": {"place_id": place_id, "data": data, "cached_at": iso(now_utc())}},
+            upsert=True,
+        )
+        return {"success": True, "data": data}
+    except Exception as e:  # pragma: no cover
+        logger.warning(f"Google reviews fetch failed: {e}")
+        items = await db.reviews.find({"status": "APPROVED"}, {"_id": 0}).sort("created_at", -1).limit(10).to_list(10)
+        return {"success": True, "data": {"source": "local", "rating": None, "total": len(items), "reviews": items, "error": str(e)}}
+
+
 @api.post("/reviews")
 async def create_review(body: ReviewIn, user=Depends(get_current_user)):
     b = await db.bookings.find_one({"id": body.booking_id, "customer_id": user["id"]})

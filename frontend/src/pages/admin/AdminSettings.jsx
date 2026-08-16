@@ -75,6 +75,11 @@ export default function AdminSettings() {
           <F label="Why-Us title"><input className="input-lux" value={s.home_why_title || ""} onChange={(e) => set("home_why_title", e.target.value)} /></F>
           <F label="Why-Us subtitle"><textarea className="input-lux min-h-[80px]" value={s.home_why_subtitle || ""} onChange={(e) => set("home_why_subtitle", e.target.value)} /></F>
         </Section>
+        <Section title="Google Reviews Integration">
+          <F label="Google Place ID"><input data-testid="google-place-id" className="input-lux" value={s.google_place_id || ""} onChange={(e) => set("google_place_id", e.target.value)} placeholder="ChIJ..." /></F>
+          <F label="Google Places API Key"><input data-testid="google-api-key" type="password" className="input-lux" value={s.google_places_api_key || ""} onChange={(e) => set("google_places_api_key", e.target.value)} placeholder="AIza..." /></F>
+          <p className="text-white/50 text-xs">Get these from Google Cloud Console → APIs & Services → Places API. Reviews are cached 12h.</p>
+        </Section>
         <Section title="Social">
           <F label="Instagram"><input className="input-lux" value={s.social_instagram || ""} onChange={(e) => set("social_instagram", e.target.value)} /></F>
           <F label="Facebook"><input className="input-lux" value={s.social_facebook || ""} onChange={(e) => set("social_facebook", e.target.value)} /></F>

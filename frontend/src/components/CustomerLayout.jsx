@@ -1,15 +1,12 @@
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
-import { Home as HomeIcon, Sparkles, CalendarCheck, User, Instagram, Facebook, MapPin, Phone } from "lucide-react";
+import { Home as HomeIcon, Instagram, Facebook, MapPin, Phone } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useEffect, useState } from "react";
 import { api, unwrap } from "@/lib/api";
-
-const navItems = [
-  { to: "/", label: "Home", icon: HomeIcon, testId: "nav-home" },
-  { to: "/services", label: "Services", icon: Sparkles, testId: "nav-services" },
-  { to: "/bookings", label: "Bookings", icon: CalendarCheck, testId: "nav-bookings" },
-  { to: "/profile", label: "Profile", icon: User, testId: "nav-profile" },
-];
+import LiquidBottomNav from "@/components/LiquidBottomNav";
+import PromoModal from "@/components/PromoModal";
+import ProfileCompletionModal from "@/components/ProfileCompletionModal";
+import FloatingSupportButton from "@/components/FloatingSupportButton";
 
 export default function CustomerLayout() {
   const { user } = useAuth();
@@ -21,24 +18,21 @@ export default function CustomerLayout() {
   }, []);
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#050505] text-white overflow-x-hidden">
-      {/* Top header */}
-      <header className="glass-nav sticky top-0 z-40">
-        <div className="max-w-6xl mx-auto px-5 md:px-8 py-4 flex items-center justify-between">
-          <Link to="/" data-testid="brand-link" className="flex items-center gap-2">
-            <div className="h-9 w-9 rounded-full bg-pink-brand flex items-center justify-center text-[#050505] font-bold font-display">
-              C
-            </div>
-            <div className="leading-tight">
-              <div className="font-display text-lg md:text-xl">Crystal</div>
-              <div className="text-[10px] tracking-[0.25em] text-white/60 uppercase">
-                Makeover & Academy
-              </div>
-            </div>
+    <div className="min-h-screen flex flex-col bg-black text-white overflow-x-hidden">
+      {/* Fixed header */}
+      <header className="glass-nav fixed top-0 inset-x-0 z-40">
+        <div className="max-w-6xl mx-auto px-5 md:px-8 py-3 flex items-center justify-between">
+          <Link to="/" data-testid="brand-link" className="flex items-center gap-3">
+            {settings?.logo_url ? (
+              <img src={settings.logo_url} alt="Crystal Makeover" className="h-11 md:h-12 w-auto object-contain" />
+            ) : (
+              <div className="font-display text-lg text-pink-brand">Crystal Makeover</div>
+            )}
           </Link>
           <nav className="hidden md:flex items-center gap-8 text-sm">
             <NavLink to="/" end className={({ isActive }) => isActive ? "text-pink-brand" : "text-white/70 hover:text-white"}>Home</NavLink>
             <NavLink to="/services" className={({ isActive }) => isActive ? "text-pink-brand" : "text-white/70 hover:text-white"}>Services</NavLink>
+            <NavLink to="/academy" className={({ isActive }) => isActive ? "text-pink-brand" : "text-white/70 hover:text-white"}>Academy</NavLink>
             <NavLink to="/bookings" className={({ isActive }) => isActive ? "text-pink-brand" : "text-white/70 hover:text-white"}>Bookings</NavLink>
             <NavLink to="/profile" className={({ isActive }) => isActive ? "text-pink-brand" : "text-white/70 hover:text-white"}>Profile</NavLink>
           </nav>
@@ -52,7 +46,10 @@ export default function CustomerLayout() {
         </div>
       </header>
 
-      <main className="flex-1 pb-24 md:pb-0">
+      {/* header spacer */}
+      <div aria-hidden className="h-[68px] md:h-[76px]" />
+
+      <main className="flex-1">
         <Outlet />
       </main>
 
@@ -73,8 +70,19 @@ export default function CustomerLayout() {
           </div>
           <div>
             <div className="text-white/80 uppercase text-xs tracking-widest mb-3">Visit</div>
-            <p className="flex items-start gap-2"><MapPin className="w-4 h-4 mt-0.5" /> {settings?.address}</p>
-            <p className="flex items-center gap-2 mt-2"><Phone className="w-4 h-4" /> {settings?.phone}</p>
+            <a
+              href={settings?.maps_url || `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(settings?.address || "")}`}
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-start gap-2 hover:text-pink-brand"
+              data-testid="footer-address"
+            >
+              <MapPin className="w-4 h-4 mt-0.5 shrink-0" />
+              <span>{settings?.address}</span>
+            </a>
+            <a href={`tel:${(settings?.phone || "").replace(/\s/g, "")}`} className="flex items-center gap-2 mt-2 hover:text-pink-brand">
+              <Phone className="w-4 h-4" /> {settings?.phone}
+            </a>
           </div>
           <div>
             <div className="text-white/80 uppercase text-xs tracking-widest mb-3">Follow</div>
@@ -87,26 +95,11 @@ export default function CustomerLayout() {
         <div className="max-w-6xl mx-auto px-8 mt-10 text-xs text-white/40">© {new Date().getFullYear()} Crystal Makeover Salon & Academy.</div>
       </footer>
 
-      {/* Mobile bottom nav */}
-      <nav data-testid="mobile-bottom-nav" className="glass-bottom-nav md:hidden fixed bottom-0 inset-x-0 z-50">
-        <ul className="grid grid-cols-4">
-          {navItems.map((n) => (
-            <li key={n.to}>
-              <NavLink
-                to={n.to}
-                end={n.to === "/"}
-                data-testid={n.testId}
-                className={({ isActive }) =>
-                  `flex flex-col items-center gap-1 py-2.5 text-[11px] ${isActive ? "text-pink-brand" : "text-white/60"}`
-                }
-              >
-                <n.icon className="w-5 h-5" />
-                {n.label}
-              </NavLink>
-            </li>
-          ))}
-        </ul>
-      </nav>
+      {/* Liquid mobile bottom nav */}
+      <LiquidBottomNav />
+      <PromoModal />
+      <FloatingSupportButton />
+      {user && <ProfileCompletionModal />}
     </div>
   );
 }

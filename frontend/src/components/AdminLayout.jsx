@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
-import { LayoutDashboard, CalendarDays, Sparkles, Users, Star, Settings, LogOut, MessageSquare } from "lucide-react";
+import { LayoutDashboard, CalendarDays, Sparkles, Users, Star, Settings, LogOut, MessageSquare, LifeBuoy } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useEffect } from "react";
 
@@ -9,6 +9,7 @@ const items = [
   { to: "/admin/services", icon: Sparkles, label: "Services", testId: "admin-nav-services" },
   { to: "/admin/customers", icon: Users, label: "Customers", testId: "admin-nav-customers" },
   { to: "/admin/reviews", icon: Star, label: "Reviews", testId: "admin-nav-reviews" },
+  { to: "/admin/support", icon: LifeBuoy, label: "Support", testId: "admin-nav-support" },
   { to: "/admin/sms", icon: MessageSquare, label: "SMS Logs", testId: "admin-nav-sms" },
   { to: "/admin/settings", icon: Settings, label: "Settings", testId: "admin-nav-settings" },
 ];
@@ -26,14 +27,11 @@ export default function AdminLayout() {
   if (loading || !user) return <div className="p-10 text-white/60">Loading…</div>;
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white flex">
+    <div className="min-h-screen bg-black text-white flex">
       <aside className="hidden md:flex w-64 flex-col border-r border-white/5 p-6 sticky top-0 h-screen">
         <div className="flex items-center gap-2 mb-10">
-          <div className="h-9 w-9 rounded-full bg-pink-brand flex items-center justify-center text-[#050505] font-bold font-display">C</div>
-          <div>
-            <div className="font-display text-lg">Crystal Admin</div>
-            <div className="text-[10px] tracking-widest uppercase text-white/50">Salon Console</div>
-          </div>
+          <img src="https://i.ibb.co/TMZk10py/IMG-20260721-171158.png" alt="Crystal" className="h-11 w-auto object-contain" />
+          <div className="text-[10px] tracking-widest uppercase text-white/50">Admin Console</div>
         </div>
         <nav className="flex-1 space-y-1">
           {items.map((n) => (
@@ -64,8 +62,7 @@ export default function AdminLayout() {
       {/* Mobile top bar */}
       <div className="md:hidden fixed top-0 inset-x-0 glass-nav z-40 flex items-center justify-between px-4 py-3">
         <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-full bg-pink-brand flex items-center justify-center text-[#050505] font-bold font-display">C</div>
-          <div className="font-display">Crystal Admin</div>
+          <img src="https://i.ibb.co/TMZk10py/IMG-20260721-171158.png" alt="Crystal" className="h-8 w-auto object-contain" />
         </div>
         <button onClick={() => { logout(); nav("/admin/login"); }} className="text-xs text-white/60">Logout</button>
       </div>

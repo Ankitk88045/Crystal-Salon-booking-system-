@@ -29,10 +29,15 @@ export default function AdminSettings() {
       <div className="mt-6 grid md:grid-cols-2 gap-4">
         <Section title="Salon Info">
           <F label="Salon name"><input className="input-lux" value={s.salon_name || ""} onChange={(e) => set("salon_name", e.target.value)} /></F>
+          <F label="Logo image URL"><input className="input-lux" value={s.logo_url || ""} onChange={(e) => set("logo_url", e.target.value)} /></F>
+          <F label="Tagline"><input className="input-lux" value={s.tagline || ""} onChange={(e) => set("tagline", e.target.value)} /></F>
           <F label="Phone"><input className="input-lux" value={s.phone || ""} onChange={(e) => set("phone", e.target.value)} /></F>
           <F label="WhatsApp"><input className="input-lux" value={s.whatsapp || ""} onChange={(e) => set("whatsapp", e.target.value)} /></F>
-          <F label="Address"><input className="input-lux" value={s.address || ""} onChange={(e) => set("address", e.target.value)} /></F>
-          <F label="Maps URL"><input className="input-lux" value={s.maps_url || ""} onChange={(e) => set("maps_url", e.target.value)} /></F>
+          <F label="Contact email (admin gets booking emails here)"><input className="input-lux" value={s.email || ""} onChange={(e) => set("email", e.target.value)} /></F>
+          <F label="Salon address (centre)"><textarea className="input-lux min-h-[70px]" value={s.address || ""} onChange={(e) => set("address", e.target.value)} /></F>
+          <F label="Home service area (visible on booking)"><input className="input-lux" value={s.home_service_area || ""} onChange={(e) => set("home_service_area", e.target.value)} /></F>
+          <F label="Google Maps URL"><input className="input-lux" value={s.maps_url || ""} onChange={(e) => set("maps_url", e.target.value)} /></F>
+          <F label="Google Review URL (sent after service)"><input data-testid="google-review-url" className="input-lux" value={s.google_review_url || ""} onChange={(e) => set("google_review_url", e.target.value)} /></F>
         </Section>
         <Section title="Business Hours">
           <F label="Opening time"><input className="input-lux" value={s.opening_time || ""} onChange={(e) => set("opening_time", e.target.value)} /></F>
@@ -41,7 +46,7 @@ export default function AdminSettings() {
             <label className="text-xs uppercase tracking-widest text-white/50">Working days</label>
             <div className="mt-2 flex gap-2 flex-wrap">
               {DAYS.map((d, i) => (
-                <button key={d} onClick={() => toggleDay(i)} className={`px-3 py-1.5 rounded-full text-xs border ${s.working_days?.includes(i) ? "bg-pink-brand text-[#050505] border-pink-brand" : "border-white/15 text-white/70"}`}>{d}</button>
+                <button key={d} onClick={() => toggleDay(i)} className={`px-3 py-1.5 rounded-full text-xs border ${s.working_days?.includes(i) ? "bg-pink-brand text-white border-pink-brand" : "border-white/15 text-white/70"}`}>{d}</button>
               ))}
             </div>
           </div>
@@ -50,7 +55,25 @@ export default function AdminSettings() {
           <F label="Advance percentage"><input type="number" className="input-lux" value={s.advance_percentage || 10} onChange={(e) => set("advance_percentage", Number(e.target.value))} /></F>
           <F label="Reminder minutes before"><input type="number" className="input-lux" value={s.reminder_minutes_before || 60} onChange={(e) => set("reminder_minutes_before", Number(e.target.value))} /></F>
           <F label="Cancellation window (hours)"><input type="number" className="input-lux" value={s.cancellation_hours || 4} onChange={(e) => set("cancellation_hours", Number(e.target.value))} /></F>
-          <F label="Review link"><input className="input-lux" value={s.review_url || ""} onChange={(e) => set("review_url", e.target.value)} /></F>
+        </Section>
+        <Section title="Promo Popup (Homepage)">
+          <div className="flex items-center gap-2">
+            <input id="promo_on" type="checkbox" checked={!!s.promo_enabled} onChange={(e) => set("promo_enabled", e.target.checked)} />
+            <label htmlFor="promo_on" className="text-sm text-white/80">Show promo popup on homepage</label>
+          </div>
+          <F label="Popup image URL"><input className="input-lux" value={s.promo_image_url || ""} onChange={(e) => set("promo_image_url", e.target.value)} /></F>
+          <F label="Title"><input className="input-lux" value={s.promo_title || ""} onChange={(e) => set("promo_title", e.target.value)} /></F>
+          <F label="Subtitle"><textarea className="input-lux min-h-[60px]" value={s.promo_subtitle || ""} onChange={(e) => set("promo_subtitle", e.target.value)} /></F>
+          <F label="Promo code"><input className="input-lux" value={s.promo_code || ""} onChange={(e) => set("promo_code", e.target.value)} /></F>
+          <F label="CTA button label"><input className="input-lux" value={s.promo_cta_label || ""} onChange={(e) => set("promo_cta_label", e.target.value)} /></F>
+          <F label="CTA link"><input className="input-lux" value={s.promo_cta_url || ""} onChange={(e) => set("promo_cta_url", e.target.value)} /></F>
+        </Section>
+        <Section title="Home Page Content">
+          <F label="Hero chip (small tagline above heading)"><input className="input-lux" value={s.home_hero_chip || ""} onChange={(e) => set("home_hero_chip", e.target.value)} /></F>
+          <F label="Hero title"><input className="input-lux" value={s.home_hero_title || ""} onChange={(e) => set("home_hero_title", e.target.value)} /></F>
+          <F label="Hero subtitle"><textarea className="input-lux min-h-[100px]" value={s.home_hero_subtitle || ""} onChange={(e) => set("home_hero_subtitle", e.target.value)} /></F>
+          <F label="Why-Us title"><input className="input-lux" value={s.home_why_title || ""} onChange={(e) => set("home_why_title", e.target.value)} /></F>
+          <F label="Why-Us subtitle"><textarea className="input-lux min-h-[80px]" value={s.home_why_subtitle || ""} onChange={(e) => set("home_why_subtitle", e.target.value)} /></F>
         </Section>
         <Section title="Social">
           <F label="Instagram"><input className="input-lux" value={s.social_instagram || ""} onChange={(e) => set("social_instagram", e.target.value)} /></F>

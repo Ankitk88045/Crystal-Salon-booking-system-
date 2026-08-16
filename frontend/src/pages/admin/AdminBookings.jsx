@@ -37,19 +37,30 @@ export default function AdminBookings() {
     } catch (e) { toast.error(e.response?.data?.detail || "Failed"); }
   };
 
+  const doReschedule = async () => {
+    if (!selected || !reschedDate || !reschedTime) return toast.error("Pick date & time");
+    try {
+      await api.post(`/admin/bookings/${selected.id}/reschedule`, {
+        appointment_date: reschedDate, start_time: reschedTime,
+      });
+      toast.success("Booking rescheduled");
+      setShowReschedule(false); setSelected(null); load();
+    } catch (e) { toast.error(e.response?.data?.detail || "Failed"); }
+  };
+
   return (
     <div>
       <h1 className="font-display text-3xl">Bookings</h1>
       <div className="mt-4 flex gap-2 overflow-x-auto no-scrollbar">
-        <button onClick={() => setFilter("")} className={`px-3 py-1.5 rounded-full text-xs border ${!filter ? "bg-pink-brand text-[#050505] border-pink-brand" : "border-white/15 text-white/70"}`}>All</button>
+        <button onClick={() => setFilter("")} className={`px-3 py-1.5 rounded-full text-xs border ${!filter ? "bg-pink-brand text-white border-pink-brand" : "border-white/15 text-white/70"}`}>All</button>
         {STATUSES.map((s) => (
-          <button key={s} onClick={() => setFilter(s)} className={`px-3 py-1.5 rounded-full text-xs border shrink-0 ${filter === s ? "bg-pink-brand text-[#050505] border-pink-brand" : "border-white/15 text-white/70"}`}>{s.replaceAll("_", " ")}</button>
+          <button key={s} onClick={() => setFilter(s)} className={`px-3 py-1.5 rounded-full text-xs border shrink-0 ${filter === s ? "bg-pink-brand text-white border-pink-brand" : "border-white/15 text-white/70"}`}>{s.replaceAll("_", " ")}</button>
         ))}
       </div>
 
       <div className="mt-6 card-lux overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-[#0a0a0a] text-white/60 text-xs uppercase tracking-widest">
+          <thead className="bg-[#0d0d0d] text-white/60 text-xs uppercase tracking-widest">
             <tr>
               <th className="text-left px-4 py-3">Booking</th>
               <th className="text-left px-4 py-3 hidden md:table-cell">Customer</th>
@@ -98,7 +109,22 @@ export default function AdminBookings() {
               {["CONFIRMED", "CUSTOMER_ARRIVED", "IN_SERVICE", "COMPLETED", "NO_SHOW", "CANCELLED"].map((s) => (
                 <button key={s} data-testid={`set-${s}`} onClick={() => update(selected.id, s)} className="btn-ghost-brand rounded-full px-3 py-1.5 text-xs">{s.replaceAll("_", " ")}</button>
               ))}
+              <button data-testid="reschedule-btn" onClick={() => { setShowReschedule(true); setReschedDate(selected.appointment_date); setReschedTime(selected.start_time); }} className="btn-primary rounded-full px-3 py-1.5 text-xs">Reschedule</button>
             </div>
+
+            {showReschedule && (
+              <div className="mt-4 card-lux p-4">
+                <div className="uppercase text-xs tracking-widest text-white/60">Move to new slot</div>
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  <input data-testid="reschedule-date" type="date" value={reschedDate} onChange={(e) => setReschedDate(e.target.value)} className="input-lux" />
+                  <input data-testid="reschedule-time" type="time" value={reschedTime} onChange={(e) => setReschedTime(e.target.value)} className="input-lux" />
+                </div>
+                <div className="flex gap-2 mt-2">
+                  <button onClick={() => setShowReschedule(false)} className="btn-ghost-brand rounded-full flex-1 py-2 text-xs">Cancel</button>
+                  <button data-testid="reschedule-confirm" onClick={doReschedule} className="btn-primary rounded-full flex-1 py-2 text-xs">Confirm</button>
+                </div>
+              </div>
+            )}
 
             {selected.booking_status === "COMPLETED" && selected.payment_status !== "PAID" && (
               <div className="mt-4 card-lux p-4">

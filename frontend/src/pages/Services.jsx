@@ -32,7 +32,7 @@ export default function Services() {
           data-testid="cat-all"
           onClick={() => setParams({})}
           className={`px-4 py-2 rounded-full text-sm border transition-colors ${
-            !catId ? "bg-pink-brand text-[#050505] border-pink-brand" : "border-white/15 text-white/70 hover:border-pink-brand"
+            !catId ? "bg-pink-brand text-white border-pink-brand" : "border-white/15 text-white/70 hover:border-pink-brand"
           }`}
         >
           All
@@ -43,7 +43,7 @@ export default function Services() {
             data-testid={`cat-${c.slug}`}
             onClick={() => setParams({ category: c.id })}
             className={`px-4 py-2 rounded-full text-sm border shrink-0 transition-colors ${
-              catId === c.id ? "bg-pink-brand text-[#050505] border-pink-brand" : "border-white/15 text-white/70 hover:border-pink-brand"
+              catId === c.id ? "bg-pink-brand text-white border-pink-brand" : "border-white/15 text-white/70 hover:border-pink-brand"
             }`}
           >
             {c.name}

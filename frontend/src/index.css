@@ -5,13 +5,13 @@
 @import url("https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Manrope:wght@300;400;500;600;700&display=swap");
 
 :root {
-  --brand-bg: #050505;
-  --brand-paper: #141414;
-  --brand-pink: #e8a2a8;
-  --brand-pink-hover: #d88b92;
+  --brand-bg: #000000;
+  --brand-paper: #0d0d0d;
+  --brand-pink: #bf7aab;
+  --brand-pink-hover: #a96695;
   --brand-text: #ffffff;
   --brand-muted: #a3a3a3;
-  --brand-border: #262626;
+  --brand-border: #1f1f1f;
 }
 
 html,
@@ -50,14 +50,14 @@ body {
 }
 
 .glass-nav {
-  background: rgba(5, 5, 5, 0.75);
+  background: rgba(0, 0, 0, 0.8);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .glass-bottom-nav {
-  background: rgba(20, 20, 20, 0.9);
+  background: rgba(10, 10, 10, 0.92);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-top: 1px solid rgba(255, 255, 255, 0.06);
@@ -66,7 +66,7 @@ body {
 
 .btn-primary {
   background-color: var(--brand-pink);
-  color: #0a0a0a;
+  color: #ffffff;
   transition:
     background-color 0.25s ease,
     transform 0.2s ease,
@@ -74,7 +74,7 @@ body {
 }
 .btn-primary:hover {
   background-color: var(--brand-pink-hover);
-  box-shadow: 0 10px 40px -12px rgba(232, 162, 168, 0.55);
+  box-shadow: 0 10px 40px -12px rgba(191, 122, 171, 0.55);
 }
 .btn-primary:active {
   transform: scale(0.98);
@@ -90,11 +90,11 @@ body {
 }
 .btn-ghost-brand:hover {
   border-color: var(--brand-pink);
-  background-color: rgba(232, 162, 168, 0.08);
+  background-color: rgba(191, 122, 171, 0.1);
 }
 
 .input-lux {
-  background: #0f0f0f;
+  background: #0d0d0d;
   border: 1px solid var(--brand-border);
   color: #fff;
   border-radius: 0.75rem;
@@ -107,15 +107,15 @@ body {
 .input-lux:focus {
   outline: none;
   border-color: var(--brand-pink);
-  box-shadow: 0 0 0 3px rgba(232, 162, 168, 0.15);
+  box-shadow: 0 0 0 3px rgba(191, 122, 171, 0.18);
 }
 
 .hero-vignette {
   background: linear-gradient(
     180deg,
-    rgba(5, 5, 5, 0.2) 0%,
-    rgba(5, 5, 5, 0.55) 50%,
-    #050505 100%
+    rgba(0, 0, 0, 0.2) 0%,
+    rgba(0, 0, 0, 0.55) 50%,
+    #000000 100%
   );
 }
 
@@ -135,20 +135,19 @@ body {
   gap: 0.35rem;
   padding: 0.25rem 0.65rem;
   border-radius: 999px;
-  background: rgba(232, 162, 168, 0.12);
+  background: rgba(191, 122, 171, 0.14);
   color: var(--brand-pink);
   font-size: 0.72rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  border: 1px solid rgba(232, 162, 168, 0.25);
+  border: 1px solid rgba(191, 122, 171, 0.28);
 }
 
 ::selection {
-  background: rgba(232, 162, 168, 0.4);
-  color: #050505;
+  background: rgba(191, 122, 171, 0.45);
+  color: #fff;
 }
 
-/* Utility hide scrollbar for horizontal chips */
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
@@ -156,28 +155,27 @@ body {
   scrollbar-width: none;
 }
 
-/* Shadcn tokens (dark) */
 @layer base {
   :root {
-    --background: 0 0% 2%;
+    --background: 0 0% 0%;
     --foreground: 0 0% 98%;
-    --card: 0 0% 8%;
+    --card: 0 0% 5%;
     --card-foreground: 0 0% 98%;
-    --popover: 0 0% 8%;
+    --popover: 0 0% 5%;
     --popover-foreground: 0 0% 98%;
-    --primary: 351 61% 78%;
-    --primary-foreground: 0 0% 5%;
-    --secondary: 0 0% 12%;
+    --primary: 320 33% 62%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 10%;
     --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 12%;
+    --muted: 0 0% 10%;
     --muted-foreground: 0 0% 64%;
-    --accent: 351 61% 78%;
-    --accent-foreground: 0 0% 5%;
+    --accent: 320 33% 62%;
+    --accent-foreground: 0 0% 100%;
     --destructive: 0 74% 62%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 15%;
-    --input: 0 0% 15%;
-    --ring: 351 61% 78%;
+    --border: 0 0% 12%;
+    --input: 0 0% 12%;
+    --ring: 320 33% 62%;
     --radius: 0.75rem;
   }
   * {

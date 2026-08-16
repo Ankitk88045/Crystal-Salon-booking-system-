@@ -10,7 +10,7 @@ export default function AdminSmsLogs() {
       <p className="text-white/60 text-sm mt-1">Every message sent from the platform (currently dev provider).</p>
       <div className="mt-6 card-lux overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-[#0a0a0a] text-white/60 text-xs uppercase tracking-widest">
+          <thead className="bg-[#0d0d0d] text-white/60 text-xs uppercase tracking-widest">
             <tr><th className="text-left px-4 py-3">Time</th><th className="text-left px-4 py-3">Phone</th><th className="text-left px-4 py-3">Type</th><th className="text-left px-4 py-3">Status</th><th className="text-left px-4 py-3 hidden md:table-cell">Message</th></tr>
           </thead>
           <tbody>

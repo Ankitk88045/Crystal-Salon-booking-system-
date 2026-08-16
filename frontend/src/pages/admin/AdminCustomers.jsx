@@ -10,7 +10,7 @@ export default function AdminCustomers() {
       <h1 className="font-display text-3xl">Customers</h1>
       <div className="mt-6 card-lux overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-[#0a0a0a] text-white/60 text-xs uppercase tracking-widest">
+          <thead className="bg-[#0d0d0d] text-white/60 text-xs uppercase tracking-widest">
             <tr><th className="text-left px-4 py-3">Name</th><th className="text-left px-4 py-3">Mobile</th><th className="text-left px-4 py-3 hidden md:table-cell">Bookings</th><th className="text-left px-4 py-3 hidden md:table-cell">Completed</th><th className="text-left px-4 py-3">Spent</th></tr>
           </thead>
           <tbody>

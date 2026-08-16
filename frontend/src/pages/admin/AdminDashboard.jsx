@@ -42,8 +42,8 @@ export default function AdminDashboard() {
               <LineChart data={d.trend}>
                 <XAxis dataKey="date" stroke="#666" fontSize={10} />
                 <YAxis stroke="#666" fontSize={10} />
-                <Tooltip contentStyle={{ background: "#0a0a0a", border: "1px solid #262626" }} />
-                <Line dataKey="revenue" stroke="#E8A2A8" strokeWidth={2} dot={false} />
+                <Tooltip contentStyle={{ background: "#0d0d0d", border: "1px solid #262626" }} />
+                <Line dataKey="revenue" stroke="#BF7AAB" strokeWidth={2} dot={false} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -55,8 +55,8 @@ export default function AdminDashboard() {
               <BarChart data={d.trend}>
                 <XAxis dataKey="date" stroke="#666" fontSize={10} />
                 <YAxis stroke="#666" fontSize={10} />
-                <Tooltip contentStyle={{ background: "#0a0a0a", border: "1px solid #262626" }} />
-                <Bar dataKey="bookings" fill="#E8A2A8" radius={[6, 6, 0, 0]} />
+                <Tooltip contentStyle={{ background: "#0d0d0d", border: "1px solid #262626" }} />
+                <Bar dataKey="bookings" fill="#BF7AAB" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>

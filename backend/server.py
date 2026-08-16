@@ -95,6 +95,27 @@ async def require_admin(user: Dict[str, Any] = Depends(get_current_user)) -> Dic
     return user
 
 
+# ----------------------------- Email service (mocked) --------------------
+class EmailService:
+    provider = os.environ.get("EMAIL_PROVIDER", "dev")
+
+    @classmethod
+    async def send(cls, *, to: str, subject: str, body: str, kind: str,
+                   booking_id: Optional[str] = None, customer_id: Optional[str] = None) -> Dict[str, Any]:
+        entry = {
+            "id": new_id(),
+            "to": to, "subject": subject, "body": body, "kind": kind,
+            "booking_id": booking_id, "customer_id": customer_id,
+            "provider": cls.provider, "status": "SENT" if to else "SKIPPED",
+            "error": None if to else "no_email_on_profile",
+            "sent_at": iso(now_utc()), "created_at": iso(now_utc()),
+        }
+        logger.info(f"[EMAIL:{cls.provider}] to={to} kind={kind} :: {subject}")
+        await db.email_logs.insert_one({**entry})
+        entry.pop("_id", None)
+        return entry
+
+
 # ----------------------------- SMS service --------------------------------
 class SMSService:
     """Provider-agnostic SMS sender. Currently logs + persists to sms_logs."""
@@ -150,7 +171,9 @@ class AdminLogin(BaseModel):
 class ProfileUpdate(BaseModel):
     name: Optional[str] = None
     email: Optional[str] = None
+    gender: Optional[str] = None
     avatar_url: Optional[str] = None
+    profile_completed: Optional[bool] = None
 
 
 class CategoryIn(BaseModel):
@@ -178,12 +201,14 @@ class ServiceIn(BaseModel):
 
 
 class BookingCreate(BaseModel):
-    service_id: str
-    appointment_date: str  # YYYY-MM-DD
-    start_time: str  # HH:MM
+    service_ids: List[str]
+    location: str = "salon"
+    appointment_date: str
+    start_time: str
     customer_notes: Optional[str] = None
-    customer_gender: Optional[str] = None  # female | male
+    customer_gender: Optional[str] = None
     customer_name: Optional[str] = None
+    payment_option: str = "advance_online"  # advance_online | full_online | pay_at_centre
 
 
 class PaymentVerify(BaseModel):
@@ -213,15 +238,21 @@ class ReviewIn(BaseModel):
 
 
 class SettingsIn(BaseModel):
+    # All fields optional so admin can PATCH selectively
+    model_config = ConfigDict(extra="allow")
     salon_name: Optional[str] = None
+    tagline: Optional[str] = None
     logo_url: Optional[str] = None
     phone: Optional[str] = None
     whatsapp: Optional[str] = None
+    email: Optional[str] = None
     address: Optional[str] = None
+    home_service_area: Optional[str] = None
     maps_url: Optional[str] = None
+    google_review_url: Optional[str] = None
     opening_time: Optional[str] = None
     closing_time: Optional[str] = None
-    working_days: Optional[List[int]] = None  # 0..6, Mon=0
+    working_days: Optional[List[int]] = None
     holidays: Optional[List[str]] = None
     advance_percentage: Optional[float] = None
     reminder_minutes_before: Optional[int] = None
@@ -229,27 +260,66 @@ class SettingsIn(BaseModel):
     review_url: Optional[str] = None
     social_instagram: Optional[str] = None
     social_facebook: Optional[str] = None
+    # promo popup
+    promo_enabled: Optional[bool] = None
+    promo_title: Optional[str] = None
+    promo_subtitle: Optional[str] = None
+    promo_code: Optional[str] = None
+    promo_image_url: Optional[str] = None
+    promo_cta_label: Optional[str] = None
+    promo_cta_url: Optional[str] = None
+    # home content
+    home_hero_title: Optional[str] = None
+    home_hero_subtitle: Optional[str] = None
+    home_hero_chip: Optional[str] = None
+    home_why_title: Optional[str] = None
+    home_why_subtitle: Optional[str] = None
+    home_stats: Optional[List[Dict[str, Any]]] = None
 
 
 # ----------------------------- seed ---------------------------------------
 DEFAULT_SETTINGS = {
     "id": "singleton",
     "salon_name": "Crystal Makeover Salon & Academy",
-    "logo_url": None,
-    "phone": "+91 98765 43210",
-    "whatsapp": "+91 98765 43210",
-    "address": "Studio 12, Beauty Avenue, Mumbai",
-    "maps_url": "https://maps.google.com",
-    "opening_time": "10:00",
-    "closing_time": "20:00",
+    "tagline": "Premium Beauty Services At Home",
+    "logo_url": "https://i.ibb.co/TMZk10py/IMG-20260721-171158.png",
+    "phone": "+91 90440 78754",
+    "whatsapp": "+91 90440 78754",
+    "email": "hello@crystalmakeover.com",
+    "address": "Crystal Makeover Salon And Academy, C-1/129, Vishwash Khand, Gomti Nagar, Lucknow, Uttar Pradesh, 226010",
+    "home_service_area": "Doorstep service available across Lucknow, Uttar Pradesh only",
+    "maps_url": "https://www.google.com/maps/dir/?api=1&destination=Crystal%20Makeover%20Salon%20And%20Academy%2C%20C-1%2F129%2C%20Vishwash%20Khand%2C%20Gomti%20Nagar%2C%20Lucknow%2C%20Uttar%20Pradesh%2C%20226010",
+    "google_review_url": "https://g.page/r/crystal-makeover/review",
+    "opening_time": "09:00",
+    "closing_time": "21:00",
     "working_days": [0, 1, 2, 3, 4, 5, 6],
     "holidays": [],
     "advance_percentage": 10.0,
     "reminder_minutes_before": 60,
     "cancellation_hours": 4,
-    "review_url": "",
-    "social_instagram": "https://instagram.com",
-    "social_facebook": "https://facebook.com",
+    "review_url": "https://maps.google.com",
+    "social_instagram": "https://instagram.com/crystalmakeover",
+    "social_facebook": "https://facebook.com/crystalmakeover",
+    # ---- promo popup (admin-controlled) ----
+    "promo_enabled": True,
+    "promo_title": "Get 20% off your first booking",
+    "promo_subtitle": "Use code CRYSTAL20 at checkout. Limited time offer for new guests.",
+    "promo_code": "CRYSTAL20",
+    "promo_image_url": "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=900&q=80",
+    "promo_cta_label": "Book Now",
+    "promo_cta_url": "/services",
+    # ---- home content (admin-editable text) ----
+    "home_hero_title": "Premium Beauty At Your Doorstep.",
+    "home_hero_subtitle": "Your ultimate A–Z beauty parlour experience at home. From everyday grooming to premium Bridal Makeup, Hair Care, and advanced Korean Skincare treatments. Safe, hygienic and affordable.",
+    "home_hero_chip": "#1 Beauty & Academy Services",
+    "home_why_title": "Why Choose Crystal Makeover?",
+    "home_why_subtitle": "Redefining home salon services with uncompromising hygiene standards, certified beauticians and guaranteed 100% genuine sealed single-use product kits.",
+    "home_stats": [
+        {"value": "15,000+", "label": "Happy Clients"},
+        {"value": "4.9", "label": "Average Rating", "star": True},
+        {"value": "100%", "label": "Sealed Cosmetics"},
+        {"value": "50+", "label": "Certified Stylists"},
+    ],
     "updated_at": iso(now_utc()),
 }
 
@@ -299,6 +369,61 @@ SEED_SERVICES = [
 
 ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL", "crystalmakeoversalon@gmail.com")
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "Admin@123")
+
+
+SEED_COURSES = [
+    {
+        "name": "Certified Bridal Makeup Course",
+        "duration": "8 weeks",
+        "price": 65000,
+        "image_url": "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=1200&q=80",
+        "description": "Master traditional & HD bridal looks, draping and hair with hands-on studio time.",
+        "features": ["8-week hands-on studio", "HD & Airbrush modules", "Portfolio shoot", "Certification"],
+    },
+    {
+        "name": "Advanced Hair Styling Course",
+        "duration": "6 weeks",
+        "price": 42000,
+        "image_url": "https://images.unsplash.com/photo-1560066984-138dadb4c035?w=1200&q=80",
+        "description": "Cuts, colour, chemical services and blow-dry mastery for the modern stylist.",
+        "features": ["Cutting & colour", "Chemical services", "Blow-dry & styling", "Client handling"],
+    },
+    {
+        "name": "Korean Skincare & Facial Therapy",
+        "duration": "4 weeks",
+        "price": 28000,
+        "image_url": "https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=1200&q=80",
+        "description": "Advanced Korean skincare protocols, glass-skin facials and diagnostic techniques.",
+        "features": ["Skin diagnostics", "K-beauty facials", "Product knowledge", "Aftercare guidance"],
+    },
+    {
+        "name": "Nail Art & Extensions Diploma",
+        "duration": "3 weeks",
+        "price": 22000,
+        "image_url": "https://images.unsplash.com/photo-1519014816548-bf5fe059798b?w=1200&q=80",
+        "description": "Everything from gel manicures to gel-x extensions and premium art techniques.",
+        "features": ["Gel & acrylic", "Extensions", "Nail art", "Sanitation protocol"],
+    },
+]
+
+
+async def seed_courses_if_empty() -> None:
+    if await db.courses.count_documents({}) == 0:
+        for idx, c in enumerate(SEED_COURSES):
+            await db.courses.insert_one({
+                "id": new_id(),
+                "slug": slugify(c["name"]),
+                "name": c["name"],
+                "duration": c["duration"],
+                "price": float(c["price"]),
+                "image_url": c["image_url"],
+                "description": c["description"],
+                "features": c["features"],
+                "display_order": idx,
+                "is_active": True,
+                "created_at": iso(now_utc()),
+            })
+        logger.info("Seeded academy courses")
 
 
 async def seed_if_empty() -> None:
@@ -393,7 +518,7 @@ async def verify_otp(phone: str, code: str) -> bool:
 
 
 # ----------------------------- availability -------------------------------
-async def compute_slots(service: Dict[str, Any], target_date: date) -> List[Dict[str, Any]]:
+async def compute_slots_for_duration(target_date: date, total_duration: int) -> List[Dict[str, Any]]:
     settings = await db.business_settings.find_one({"id": "singleton"}, {"_id": 0}) or DEFAULT_SETTINGS
     weekday = target_date.weekday()
     if weekday not in settings.get("working_days", [0, 1, 2, 3, 4, 5, 6]):
@@ -404,12 +529,11 @@ async def compute_slots(service: Dict[str, Any], target_date: date) -> List[Dict
     close_h, close_m = map(int, settings["closing_time"].split(":"))
     open_dt = datetime.combine(target_date, time(open_h, open_m))
     close_dt = datetime.combine(target_date, time(close_h, close_m))
-    dur = int(service["duration_minutes"]) + int(service.get("buffer_minutes", 0))
     step = 30
 
-    # existing non-cancelled bookings
     existing = await db.bookings.find({
         "appointment_date": target_date.isoformat(),
+        "location": {"$ne": "home"},
         "booking_status": {"$in": ["CONFIRMED", "PENDING_PAYMENT", "CUSTOMER_ARRIVED", "IN_SERVICE", "RESCHEDULED"]},
     }, {"_id": 0}).to_list(500)
 
@@ -419,8 +543,8 @@ async def compute_slots(service: Dict[str, Any], target_date: date) -> List[Dict
     slots: List[Dict[str, Any]] = []
     cur = open_dt
     now = now_utc().replace(tzinfo=None)
-    while cur + timedelta(minutes=dur) <= close_dt:
-        end = cur + timedelta(minutes=dur)
+    while cur + timedelta(minutes=total_duration) <= close_dt:
+        end = cur + timedelta(minutes=total_duration)
         conflict = False
         for b in existing:
             bs = datetime.fromisoformat(f"{b['appointment_date']}T{b['start_time']}")
@@ -436,6 +560,11 @@ async def compute_slots(service: Dict[str, Any], target_date: date) -> List[Dict
         })
         cur += timedelta(minutes=step)
     return slots
+
+
+async def compute_slots(service: Dict[str, Any], target_date: date) -> List[Dict[str, Any]]:
+    dur = int(service["duration_minutes"]) + int(service.get("buffer_minutes", 0))
+    return await compute_slots_for_duration(target_date, dur)
 
 
 # ----------------------------- routes -------------------------------------
@@ -503,6 +632,9 @@ async def admin_login(body: AdminLogin):
 @api.get("/auth/me")
 async def me(user=Depends(get_current_user)):
     user.pop("password_hash", None)
+    completed = await db.bookings.count_documents({"customer_id": user["id"], "booking_status": "COMPLETED"})
+    user["completed_bookings_count"] = completed
+    user["can_pay_at_centre"] = completed >= 1
     return {"success": True, "data": user}
 
 
@@ -546,41 +678,82 @@ async def get_service(slug: str):
 
 
 @api.get("/availability")
-async def availability(service_id: str, date_str: str):
-    s = await db.services.find_one({"id": service_id, "is_active": True}, {"_id": 0})
-    if not s:
-        raise HTTPException(404, "Service not found")
+async def availability(date_str: str, service_id: Optional[str] = None, service_ids: Optional[str] = None):
+    """`service_ids` = comma separated (multi-service). `service_id` kept for compat."""
     d = date.fromisoformat(date_str)
-    slots = await compute_slots(s, d)
-    return {"success": True, "data": {"date": date_str, "slots": slots, "service": s}}
+    ids: List[str] = []
+    if service_ids:
+        ids = [s for s in service_ids.split(",") if s]
+    elif service_id:
+        ids = [service_id]
+    if not ids:
+        raise HTTPException(400, "service_id or service_ids required")
+    services = await db.services.find({"id": {"$in": ids}, "is_active": True}, {"_id": 0}).to_list(50)
+    if len(services) != len(ids):
+        raise HTTPException(404, "One or more services not found")
+    total_duration = sum(int(s["duration_minutes"]) + int(s.get("buffer_minutes", 0)) for s in services)
+    slots = await compute_slots_for_duration(d, total_duration)
+    return {"success": True, "data": {"date": date_str, "slots": slots, "services": services, "total_duration": total_duration}}
 
 
 # ---- bookings ----
 async def _create_booking_doc(user: Dict[str, Any], body: BookingCreate) -> Dict[str, Any]:
-    svc = await db.services.find_one({"id": body.service_id, "is_active": True}, {"_id": 0})
-    if not svc:
-        raise HTTPException(404, "Service not found")
-    # Gender policy enforcement
+    if body.location == "home":
+        raise HTTPException(400, "Home service bookings should be requested via WhatsApp")
+    if not body.service_ids:
+        raise HTTPException(400, "At least one service is required")
+    # Payment eligibility check first (before spending time on slot lookups)
+    if body.payment_option == "pay_at_centre":
+        completed_count = await db.bookings.count_documents({
+            "customer_id": user["id"], "booking_status": "COMPLETED",
+        })
+        if completed_count < 1:
+            raise HTTPException(400, "Pay-at-centre is available only after your first completed booking. Please choose an online option.")
+    services = await db.services.find({"id": {"$in": body.service_ids}, "is_active": True}, {"_id": 0}).to_list(50)
+    if len(services) != len(body.service_ids):
+        raise HTTPException(404, "One or more services not found")
+    # Gender policy: any female_only service requires female customer
     gender = (body.customer_gender or "female").lower()
-    if svc.get("gender_policy") == "female_only" and gender != "female":
-        raise HTTPException(400, "This service is available only for female customers.")
+    has_female_only = any(s.get("gender_policy") == "female_only" for s in services)
+    if has_female_only and gender != "female":
+        raise HTTPException(400, "One or more selected services are available only for female customers.")
+
     settings = await db.business_settings.find_one({"id": "singleton"}, {"_id": 0}) or DEFAULT_SETTINGS
     d = date.fromisoformat(body.appointment_date)
     start_h, start_m = map(int, body.start_time.split(":"))
     start_dt = datetime.combine(d, time(start_h, start_m))
-    total_min = int(svc["duration_minutes"]) + int(svc.get("buffer_minutes", 0))
-    end_dt = start_dt + timedelta(minutes=total_min)
+    total_duration = sum(int(s["duration_minutes"]) + int(s.get("buffer_minutes", 0)) for s in services)
+    end_dt = start_dt + timedelta(minutes=total_duration)
 
-    # slot validation
-    slots = await compute_slots(svc, d)
-    match = next((s for s in slots if s["start_time"] == body.start_time), None)
+    # slot validation against combined duration
+    slots = await compute_slots_for_duration(d, total_duration)
+    match = next((sl for sl in slots if sl["start_time"] == body.start_time), None)
     if not match or not match["available"]:
         raise HTTPException(409, "Selected slot is no longer available")
 
-    price = float(svc.get("offer_price") or svc["price"])
+    # Preserve service order as requested (services list may not match input order)
+    services_by_id = {s["id"]: s for s in services}
+    ordered = [services_by_id[i] for i in body.service_ids if i in services_by_id]
+    services_snapshot = [{
+        "id": s["id"], "name": s["name"], "price": float(s.get("offer_price") or s["price"]),
+        "duration_minutes": int(s["duration_minutes"]), "image_url": s.get("image_url"),
+        "category_name": s.get("category_name"),
+    } for s in ordered]
+
+    total_price = sum(item["price"] for item in services_snapshot)
     advance_pct = float(settings.get("advance_percentage", 10.0))
-    advance = round(price * advance_pct / 100.0, 2)
-    remaining = round(price - advance, 2)
+
+    # Payment eligibility validated up front. Compute amounts based on option.
+    if body.payment_option == "pay_at_centre":
+        advance = 0.0
+        remaining = total_price
+    elif body.payment_option == "full_online":
+        advance = total_price
+        remaining = 0.0
+    else:  # advance_online
+        advance = round(total_price * advance_pct / 100.0, 2)
+        remaining = round(total_price - advance, 2)
+    combined_name = " + ".join(item["name"] for item in services_snapshot)
 
     booking = {
         "id": new_id(),
@@ -589,21 +762,25 @@ async def _create_booking_doc(user: Dict[str, Any], body: BookingCreate) -> Dict
         "customer_name": body.customer_name or user.get("name"),
         "customer_phone": user.get("phone"),
         "customer_gender": gender,
-        "service_id": svc["id"],
-        "service_name_snapshot": svc["name"],
-        "service_price_snapshot": price,
-        "service_duration_snapshot": svc["duration_minutes"],
-        "category_name": svc.get("category_name"),
-        "image_url": svc.get("image_url"),
+        "location": "salon",
+        "service_id": services_snapshot[0]["id"],  # primary (compat)
+        "service_ids": [item["id"] for item in services_snapshot],
+        "services_snapshot": services_snapshot,
+        "service_name_snapshot": combined_name,
+        "service_price_snapshot": total_price,
+        "service_duration_snapshot": total_duration,
+        "category_name": services_snapshot[0]["category_name"],
+        "image_url": services_snapshot[0]["image_url"],
         "appointment_date": body.appointment_date,
         "start_time": body.start_time,
         "end_time": end_dt.strftime("%H:%M"),
-        "total_amount": price,
+        "total_amount": total_price,
         "advance_percentage": advance_pct,
         "advance_amount": advance,
         "remaining_amount": remaining,
         "payment_status": "PENDING",
-        "booking_status": "PENDING_PAYMENT",
+        "payment_option": body.payment_option,
+        "booking_status": "PENDING_PAYMENT" if body.payment_option != "pay_at_centre" else "CONFIRMED",
         "customer_notes": body.customer_notes,
         "admin_notes": None,
         "reminder_sent": False,
@@ -613,9 +790,9 @@ async def _create_booking_doc(user: Dict[str, Any], body: BookingCreate) -> Dict
         "created_at": iso(now_utc()),
         "updated_at": iso(now_utc()),
     }
-    # Final race-condition check: re-fetch conflicts
     conflicts = await db.bookings.count_documents({
         "appointment_date": booking["appointment_date"],
+        "location": {"$ne": "home"},
         "booking_status": {"$in": ["CONFIRMED", "PENDING_PAYMENT", "CUSTOMER_ARRIVED", "IN_SERVICE"]},
         "$expr": {"$and": [
             {"$lt": ["$start_time", booking["end_time"]]},
@@ -625,6 +802,25 @@ async def _create_booking_doc(user: Dict[str, Any], body: BookingCreate) -> Dict
     if conflicts:
         raise HTTPException(409, "Slot just got booked. Please pick another time.")
     await db.bookings.insert_one(booking.copy())
+    # Notify admin about the new booking
+    try:
+        _settings = await db.business_settings.find_one({"id": "singleton"}, {"_id": 0}) or DEFAULT_SETTINGS
+        admin_email = _settings.get("email") or ADMIN_EMAIL
+        items_html = "".join([f"<li>{s['name']} — ₹{int(s['price'])} · {s['duration_minutes']} min</li>" for s in booking["services_snapshot"]])
+        body_html = (
+            f"<h3>New booking · {booking['booking_number']}</h3>"
+            f"<p><b>Status:</b> {booking['booking_status']} · <b>Payment:</b> {booking['payment_option']}</p>"
+            f"<p><b>Customer:</b> {booking['customer_name']} ({booking['customer_phone']})</p>"
+            f"<p><b>Date/Time:</b> {booking['appointment_date']} · {booking['start_time']} – {booking['end_time']}</p>"
+            f"<p><b>Services:</b><ul>{items_html}</ul></p>"
+            f"<p><b>Total:</b> ₹{int(booking['total_amount'])} · <b>Advance:</b> ₹{int(booking['advance_amount'])} · <b>Balance:</b> ₹{int(booking['remaining_amount'])}</p>"
+            f"<p><b>Notes:</b> {booking.get('customer_notes') or '-'}</p>"
+        )
+        await EmailService.send(to=admin_email, subject=f"New booking · {booking['booking_number']} · {booking['appointment_date']} {booking['start_time']}",
+                                body=body_html, kind="ADMIN_NEW_BOOKING",
+                                booking_id=booking["id"], customer_id=user["id"])
+    except Exception as e:  # pragma: no cover
+        logger.warning(f"admin email failed: {e}")
     return booking
 
 
@@ -736,6 +932,22 @@ async def verify_payment(body: PaymentVerify, user=Depends(get_current_user)):
            f"Balance ₹{b['remaining_amount']:.0f} at salon. — {settings['salon_name']}")
     await SMSService.send(phone=b["customer_phone"], message=msg, msg_type="BOOKING_CONFIRMATION",
                           booking_id=b["id"], customer_id=user["id"])
+    # Notify admin the payment was received
+    try:
+        _settings = await db.business_settings.find_one({"id": "singleton"}, {"_id": 0}) or DEFAULT_SETTINGS
+        await EmailService.send(
+            to=_settings.get("email") or ADMIN_EMAIL,
+            subject=f"Payment received · {b['booking_number']} · ₹{int(b['advance_amount'])}",
+            body=(
+                f"<h3>Advance payment received</h3>"
+                f"<p>{b['customer_name']} ({b['customer_phone']}) paid ₹{int(b['advance_amount'])} "
+                f"for {b['service_name_snapshot']} on {b['appointment_date']} at {b['start_time']}.</p>"
+                f"<p>Balance ₹{int(b['remaining_amount'])} due at salon.</p>"
+            ),
+            kind="ADMIN_PAYMENT_RECEIVED", booking_id=b["id"], customer_id=user["id"],
+        )
+    except Exception as e:  # pragma: no cover
+        logger.warning(f"admin email failed: {e}")
     return {"success": True, "data": {"booking": b, "payment_id": payment["id"]}}
 
 
@@ -772,6 +984,121 @@ async def create_review(body: ReviewIn, user=Depends(get_current_user)):
 async def list_reviews():
     items = await db.reviews.find({"status": "APPROVED"}, {"_id": 0}).sort("created_at", -1).limit(20).to_list(20)
     return {"success": True, "data": items}
+
+
+@api.get("/courses")
+async def list_courses():
+    items = await db.courses.find({"is_active": True}, {"_id": 0}).sort("display_order", 1).to_list(100)
+    return {"success": True, "data": items}
+
+
+@api.post("/academy/enquiry")
+async def academy_enquiry(body: Dict[str, Any]):
+    entry = {
+        "id": new_id(),
+        "name": body.get("name"),
+        "phone": body.get("phone"),
+        "email": body.get("email"),
+        "course": body.get("course"),
+        "message": body.get("message"),
+        "status": "NEW",
+        "created_at": iso(now_utc()),
+    }
+    await db.academy_enquiries.insert_one(entry.copy())
+    entry.pop("_id", None)
+    return {"success": True, "data": entry}
+
+
+# ---- support tickets ----
+def _gen_ticket_number() -> str:
+    return "CT" + "".join(random.choices(string.digits, k=7))
+
+
+class SupportTicketIn(BaseModel):
+    name: str
+    phone: str
+    email: Optional[str] = None
+    subject: Optional[str] = None
+    message: str
+
+
+@api.post("/support/tickets")
+async def create_ticket(body: SupportTicketIn):
+    ticket = {
+        "id": new_id(),
+        "ticket_number": _gen_ticket_number(),
+        "name": body.name,
+        "phone": body.phone,
+        "email": body.email,
+        "subject": body.subject or "Support enquiry",
+        "message": body.message,
+        "status": "OPEN",
+        "admin_reply": None,
+        "created_at": iso(now_utc()),
+        "updated_at": iso(now_utc()),
+    }
+    await db.support_tickets.insert_one(ticket.copy())
+    settings = await db.business_settings.find_one({"id": "singleton"}, {"_id": 0}) or DEFAULT_SETTINGS
+    admin_email = settings.get("email") or ADMIN_EMAIL
+    # notify admin
+    admin_body = (
+        f"<h3>New support ticket · {ticket['ticket_number']}</h3>"
+        f"<p><b>From:</b> {ticket['name']} · {ticket['phone']}{' · '+ticket['email'] if ticket['email'] else ''}</p>"
+        f"<p><b>Subject:</b> {ticket['subject']}</p>"
+        f"<blockquote>{ticket['message']}</blockquote>"
+        f"<p>Manage this ticket from Admin → Support.</p>"
+    )
+    await EmailService.send(to=admin_email, subject=f"[{ticket['ticket_number']}] {ticket['subject']}",
+                            body=admin_body, kind="ADMIN_SUPPORT_TICKET")
+    # ack the user by email (best effort)
+    if ticket["email"]:
+        user_body = (
+            f"<h3>Thanks, {ticket['name']}!</h3>"
+            f"<p>We&rsquo;ve received your query. Your ticket ID is <b>{ticket['ticket_number']}</b>.</p>"
+            f"<p>Our team will get back to you shortly. You can also chat with us on WhatsApp: {settings.get('whatsapp')}.</p>"
+            f"<p>— {settings.get('salon_name')}</p>"
+        )
+        await EmailService.send(to=ticket["email"], subject=f"We got your message · Ticket {ticket['ticket_number']}",
+                                body=user_body, kind="SUPPORT_ACK")
+    # SMS ack always
+    await SMSService.send(phone=ticket["phone"], msg_type="SUPPORT_ACK",
+                          message=f"Hi {ticket['name']}, we received your query. Ticket {ticket['ticket_number']}. — {settings.get('salon_name')}")
+    ticket.pop("_id", None)
+    return {"success": True, "data": ticket}
+
+
+@api.get("/admin/support")
+async def admin_support_list(user=Depends(require_admin)):
+    items = await db.support_tickets.find({}, {"_id": 0}).sort("created_at", -1).to_list(500)
+    return {"success": True, "data": items}
+
+
+class SupportUpdateIn(BaseModel):
+    status: Optional[str] = None  # OPEN | IN_PROGRESS | RESOLVED | CLOSED
+    admin_reply: Optional[str] = None
+
+
+@api.patch("/admin/support/{tid}")
+async def admin_support_update(tid: str, body: SupportUpdateIn, user=Depends(require_admin)):
+    t = await db.support_tickets.find_one({"id": tid})
+    if not t:
+        raise HTTPException(404, "Ticket not found")
+    patch: Dict[str, Any] = {"updated_at": iso(now_utc())}
+    if body.status:
+        patch["status"] = body.status
+    if body.admin_reply:
+        patch["admin_reply"] = body.admin_reply
+    await db.support_tickets.update_one({"id": tid}, {"$set": patch})
+    # Email the customer if a reply was sent
+    if body.admin_reply and t.get("email"):
+        settings = await db.business_settings.find_one({"id": "singleton"}, {"_id": 0}) or DEFAULT_SETTINGS
+        await EmailService.send(
+            to=t["email"],
+            subject=f"Reply · Ticket {t['ticket_number']} · {settings.get('salon_name')}",
+            body=f"<h3>Re: {t.get('subject')}</h3><p>{body.admin_reply}</p><p>— {settings.get('salon_name')} Support</p>",
+            kind="SUPPORT_REPLY",
+        )
+    return {"success": True, "data": {"id": tid, **patch}}
 
 
 # ============================ ADMIN ROUTES ================================
@@ -897,6 +1224,57 @@ async def admin_record_payment(booking_id: str, body: RemainingPaymentIn, user=D
     return {"success": True, "data": pay}
 
 
+class RescheduleIn(BaseModel):
+    appointment_date: str
+    start_time: str
+
+
+@api.post("/admin/bookings/{booking_id}/reschedule")
+async def admin_reschedule(booking_id: str, body: RescheduleIn, user=Depends(require_admin)):
+    b = await db.bookings.find_one({"id": booking_id})
+    if not b:
+        raise HTTPException(404, "Not found")
+    d = date.fromisoformat(body.appointment_date)
+    sh, sm = map(int, body.start_time.split(":"))
+    start_dt = datetime.combine(d, time(sh, sm))
+    total_dur = int(b.get("service_duration_snapshot") or 0)
+    if not total_dur:
+        total_dur = sum(int(s.get("duration_minutes", 0)) for s in b.get("services_snapshot", [])) or 60
+    end_dt = start_dt + timedelta(minutes=total_dur)
+    conflicts = await db.bookings.count_documents({
+        "id": {"$ne": booking_id},
+        "appointment_date": body.appointment_date,
+        "location": {"$ne": "home"},
+        "booking_status": {"$in": ["CONFIRMED", "PENDING_PAYMENT", "CUSTOMER_ARRIVED", "IN_SERVICE"]},
+        "$expr": {"$and": [
+            {"$lt": ["$start_time", end_dt.strftime("%H:%M")]},
+            {"$gt": ["$end_time", body.start_time]},
+        ]},
+    })
+    if conflicts:
+        raise HTTPException(409, "Chosen slot is not available")
+    old = {"date": b["appointment_date"], "start": b["start_time"], "end": b.get("end_time")}
+    await db.bookings.update_one({"id": booking_id}, {"$set": {
+        "appointment_date": body.appointment_date,
+        "start_time": body.start_time,
+        "end_time": end_dt.strftime("%H:%M"),
+        "booking_status": "RESCHEDULED",
+        "reminder_sent": False,
+        "updated_at": iso(now_utc()),
+    }})
+    await db.audit_logs.insert_one({
+        "id": new_id(), "admin_id": user["id"], "action": "reschedule_booking",
+        "entity": "booking", "entity_id": booking_id, "previous_data": old,
+        "new_data": {"date": body.appointment_date, "start": body.start_time}, "at": iso(now_utc()),
+    })
+    # notify customer + admin
+    settings = await db.business_settings.find_one({"id": "singleton"}, {"_id": 0}) or DEFAULT_SETTINGS
+    await SMSService.send(phone=b["customer_phone"], msg_type="BOOKING_RESCHEDULED",
+                          message=f"Hi {b['customer_name']}, your appointment has been rescheduled to {body.appointment_date} at {body.start_time}. — {settings['salon_name']}",
+                          booking_id=booking_id, customer_id=b["customer_id"])
+    return {"success": True, "data": {"id": booking_id}}
+
+
 @api.get("/admin/customers")
 async def admin_customers(user=Depends(require_admin)):
     customers = await db.profiles.find({"role": "CUSTOMER"}, {"_id": 0, "password_hash": 0}).to_list(1000)
@@ -999,6 +1377,69 @@ async def admin_create_category(body: CategoryIn, user=Depends(require_admin)):
     return {"success": True, "data": cat}
 
 
+@api.patch("/admin/categories/{cid}")
+async def admin_update_category(cid: str, body: CategoryIn, user=Depends(require_admin)):
+    patch = body.model_dump()
+    patch["slug"] = slugify(body.name)
+    await db.service_categories.update_one({"id": cid}, {"$set": patch})
+    return {"success": True, "data": {"id": cid}}
+
+
+@api.delete("/admin/categories/{cid}")
+async def admin_delete_category(cid: str, user=Depends(require_admin)):
+    await db.service_categories.update_one({"id": cid}, {"$set": {"is_active": False}})
+    return {"success": True, "data": {"id": cid}}
+
+
+@api.get("/admin/courses")
+async def admin_courses(user=Depends(require_admin)):
+    items = await db.courses.find({}, {"_id": 0}).sort("display_order", 1).to_list(200)
+    return {"success": True, "data": items}
+
+
+@api.post("/admin/courses")
+async def admin_create_course(body: Dict[str, Any], user=Depends(require_admin)):
+    doc = {
+        "id": new_id(),
+        "slug": slugify(body.get("name", "course")),
+        "name": body.get("name"),
+        "duration": body.get("duration"),
+        "price": float(body.get("price", 0)),
+        "image_url": body.get("image_url"),
+        "description": body.get("description", ""),
+        "features": body.get("features", []),
+        "display_order": int(body.get("display_order", 0)),
+        "is_active": bool(body.get("is_active", True)),
+        "created_at": iso(now_utc()),
+    }
+    await db.courses.insert_one(doc.copy())
+    doc.pop("_id", None)
+    return {"success": True, "data": doc}
+
+
+@api.patch("/admin/courses/{cid}")
+async def admin_update_course(cid: str, body: Dict[str, Any], user=Depends(require_admin)):
+    patch = {k: v for k, v in body.items() if k in (
+        "name", "duration", "price", "image_url", "description", "features", "display_order", "is_active"
+    )}
+    if "name" in patch:
+        patch["slug"] = slugify(patch["name"])
+    await db.courses.update_one({"id": cid}, {"$set": patch})
+    return {"success": True, "data": {"id": cid}}
+
+
+@api.delete("/admin/courses/{cid}")
+async def admin_delete_course(cid: str, user=Depends(require_admin)):
+    await db.courses.update_one({"id": cid}, {"$set": {"is_active": False}})
+    return {"success": True, "data": {"id": cid}}
+
+
+@api.get("/admin/email-logs")
+async def admin_email_logs(user=Depends(require_admin)):
+    items = await db.email_logs.find({}, {"_id": 0}).sort("created_at", -1).limit(200).to_list(200)
+    return {"success": True, "data": items}
+
+
 @api.get("/admin/reviews")
 async def admin_reviews(user=Depends(require_admin)):
     items = await db.reviews.find({}, {"_id": 0}).sort("created_at", -1).to_list(500)
@@ -1068,6 +1509,7 @@ async def reminder_loop() -> None:
 @app.on_event("startup")
 async def on_startup():
     await seed_if_empty()
+    await seed_courses_if_empty()
     await db.bookings.create_index([("appointment_date", 1), ("start_time", 1)])
     await db.bookings.create_index("customer_id")
     await db.services.create_index("slug", unique=False)

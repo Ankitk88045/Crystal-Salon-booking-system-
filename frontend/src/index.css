@@ -1,0 +1,186 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Manrope:wght@300;400;500;600;700&display=swap");
+
+:root {
+  --brand-bg: #050505;
+  --brand-paper: #141414;
+  --brand-pink: #e8a2a8;
+  --brand-pink-hover: #d88b92;
+  --brand-text: #ffffff;
+  --brand-muted: #a3a3a3;
+  --brand-border: #262626;
+}
+
+html,
+body,
+#root {
+  background: var(--brand-bg);
+  color: var(--brand-text);
+  font-family: "Manrope", ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+body {
+  margin: 0;
+}
+
+.font-display {
+  font-family: "Playfair Display", ui-serif, Georgia, serif;
+  letter-spacing: -0.02em;
+}
+
+.text-pink-brand {
+  color: var(--brand-pink);
+}
+.bg-pink-brand {
+  background-color: var(--brand-pink);
+}
+.border-pink-brand {
+  border-color: var(--brand-pink);
+}
+
+.card-lux {
+  background: var(--brand-paper);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 1rem;
+}
+
+.glass-nav {
+  background: rgba(5, 5, 5, 0.75);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.glass-bottom-nav {
+  background: rgba(20, 20, 20, 0.9);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.btn-primary {
+  background-color: var(--brand-pink);
+  color: #0a0a0a;
+  transition:
+    background-color 0.25s ease,
+    transform 0.2s ease,
+    box-shadow 0.25s ease;
+}
+.btn-primary:hover {
+  background-color: var(--brand-pink-hover);
+  box-shadow: 0 10px 40px -12px rgba(232, 162, 168, 0.55);
+}
+.btn-primary:active {
+  transform: scale(0.98);
+}
+
+.btn-ghost-brand {
+  background: transparent;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease;
+}
+.btn-ghost-brand:hover {
+  border-color: var(--brand-pink);
+  background-color: rgba(232, 162, 168, 0.08);
+}
+
+.input-lux {
+  background: #0f0f0f;
+  border: 1px solid var(--brand-border);
+  color: #fff;
+  border-radius: 0.75rem;
+  padding: 0.75rem 1rem;
+  width: 100%;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+.input-lux:focus {
+  outline: none;
+  border-color: var(--brand-pink);
+  box-shadow: 0 0 0 3px rgba(232, 162, 168, 0.15);
+}
+
+.hero-vignette {
+  background: linear-gradient(
+    180deg,
+    rgba(5, 5, 5, 0.2) 0%,
+    rgba(5, 5, 5, 0.55) 50%,
+    #050505 100%
+  );
+}
+
+.divider-hairline {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.12),
+    transparent
+  );
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  background: rgba(232, 162, 168, 0.12);
+  color: var(--brand-pink);
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  border: 1px solid rgba(232, 162, 168, 0.25);
+}
+
+::selection {
+  background: rgba(232, 162, 168, 0.4);
+  color: #050505;
+}
+
+/* Utility hide scrollbar for horizontal chips */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+/* Shadcn tokens (dark) */
+@layer base {
+  :root {
+    --background: 0 0% 2%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 8%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 8%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 351 61% 78%;
+    --primary-foreground: 0 0% 5%;
+    --secondary: 0 0% 12%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 12%;
+    --muted-foreground: 0 0% 64%;
+    --accent: 351 61% 78%;
+    --accent-foreground: 0 0% 5%;
+    --destructive: 0 74% 62%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 15%;
+    --input: 0 0% 15%;
+    --ring: 351 61% 78%;
+    --radius: 0.75rem;
+  }
+  * {
+    @apply border-border;
+  }
+}

@@ -1,0 +1,142 @@
+{
+  "theme_concept": "Luxury, Modern, Premium, Elegant, Feminine, Professional. Focus on Premium Black backgrounds with Light Pink accents. The feel should be exclusive, utilizing generous negative space, high contrast between dark backgrounds and soft pink highlights, and crisp sans-serif/serif typography pairing. Deep charcoal cards with subtle soft borders to build depth without clutter.",
+  "typography": {
+    "headings": {
+      "font_family": "Playfair Display, serif",
+      "weights": ["400", "500", "700"],
+      "usage": "Use for all major section headings (H1, H2, H3) and Hero titles. Adds the premium, feminine, and elegant editorial feel.",
+      "tracking": "tracking-tight"
+    },
+    "body": {
+      "font_family": "Manrope, sans-serif",
+      "weights": ["300", "400", "500", "600"],
+      "usage": "Use for body text, inputs, buttons, and dashboard data. Crisp, modern, and highly legible.",
+      "tracking": "tracking-normal"
+    },
+    "scale": {
+      "h1": "text-4xl sm:text-5xl lg:text-6xl tracking-tight leading-tight",
+      "h2": "text-3xl sm:text-4xl lg:text-5xl tracking-tight leading-snug",
+      "h3": "text-2xl sm:text-3xl leading-snug",
+      "h4": "text-xl sm:text-2xl",
+      "body": "text-base",
+      "small": "text-sm text-muted-foreground",
+      "overline": "text-xs uppercase tracking-widest text-primary font-semibold"
+    }
+  },
+  "colors": {
+    "background": {
+      "default": "#050505",
+      "paper": "#141414",
+      "card": "#141414",
+      "overlay": "rgba(5, 5, 5, 0.7)"
+    },
+    "primary": {
+      "default": "#E8A2A8",
+      "hover": "#D88B92",
+      "foreground": "#050505"
+    },
+    "secondary": {
+      "default": "#262626",
+      "hover": "#333333",
+      "foreground": "#FFFFFF"
+    },
+    "text": {
+      "primary": "#FFFFFF",
+      "secondary": "#A3A3A3",
+      "muted": "#737373"
+    },
+    "border": {
+      "default": "#262626",
+      "subtle": "#1F1F1F"
+    },
+    "status": {
+      "success": "#4ADE80",
+      "warning": "#FBBF24",
+      "error": "#F87171"
+    }
+  },
+  "responsive": {
+    "breakpoint": "Mobile-first design. All default classes apply to mobile. Use sm:, md:, lg: prefixes for larger screens.",
+    "layout": "Mobile uses stacked elements and a fixed bottom navigation bar for the customer side. Desktop uses multi-column bento grids and a sidebar for the admin panel.",
+    "typography": "Fluid typography or stepped scaling. H1 starts at text-4xl on mobile, scales to text-6xl on desktop.",
+    "overflow_guard": "Use overflow-x-hidden on the main wrapper to prevent horizontal scrolling.",
+    "tap_targets": "Ensure all interactive elements (buttons, links, nav items) have a minimum height and width of 44px on mobile."
+  },
+  "spacing_and_layout": {
+    "philosophy": "Generous Spacing. Use p-6, p-8, and p-12 for containers. Let the dark theme breathe.",
+    "grid_system": {
+      "marketing": "Bento grids with gap-6 to gap-12. Asymmetrical column spans (e.g. col-span-12 md:col-span-8).",
+      "dashboard": "High density, gap-4 to gap-6. Strict layout."
+    },
+    "mobile_nav": "Fixed bottom navigation (Home, Services, Bookings, Profile) with glassmorphism (backdrop-blur-xl bg-[#141414]/90 border-t border-white/5). Must have z-50.",
+    "desktop_nav": "Sticky header with glassmorphism (bg-[#050505]/80 backdrop-blur-md) and border-b border-border."
+  },
+  "surface_strategies": {
+    "glassmorphism": "Used for sticky headers, mobile bottom nav, and floating modals. bg-black/60 or bg-[#141414]/80 with backdrop-blur-xl and border-white/10.",
+    "cards": "Solid charcoal (#141414) with 1px subtle border (border-white/5) and gentle shadow (shadow-2xl shadow-black/50). Rounded corners (rounded-2xl).",
+    "buttons": "Pill-shaped (rounded-full) for primary marketing CTAs, slightly rounded (rounded-lg) for dashboard actions."
+  },
+  "components": {
+    "libraries": "Shadcn UI (customized), Framer Motion, Lucide React (or Phosphor Icons if installed).",
+    "specific_rules": {
+      "buttons": "Primary buttons use #E8A2A8 (Light Pink) with black text. Hover state must transition smoothly.",
+      "inputs": "Dark background (#141414), border (#262626), focus ring with primary color.",
+      "booking_wizard": "Use stepped progress indicator. Each step should animate in using Framer Motion (fade and slight translate-y).",
+      "admin_sidebar": "Fixed on desktop, hamburger menu driving a Sheet component on mobile.",
+      "tabs": "Used for 'Upcoming/Completed/Cancelled' bookings. Customized to look like pill toggles or animated underbars."
+    }
+  },
+  "image_urls": {
+    "hero_bridal": {
+      "url": "https://images.unsplash.com/photo-1684868265714-fd2300637c23?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1OTN8MHwxfHNlYXJjaHw0fHxicmlkYWwlMjBtYWtldXAlMjBlbGVnYW50fGVufDB8fHx8MTc4NjkxMzAzMHww&ixlib=rb-4.1.0&q=85",
+      "description": "Elegant bridal makeup portrait. Use in Hero section with a dark gradient overlay (bg-black/40) to ensure text contrast."
+    },
+    "hero_alternative": {
+      "url": "https://images.unsplash.com/photo-1610047614301-13c63f00c032?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1OTN8MHwxfHNlYXJjaHwxfHxicmlkYWwlMjBtYWtldXAlMjBlbGVnYW50fGVufDB8fHx8MTc4NjkxMzAzMHww&ixlib=rb-4.1.0&q=85",
+      "description": "Woman in red and gold sari dress. Perfect for Bridal Service category card."
+    },
+    "salon_interior": {
+      "url": "https://images.unsplash.com/photo-1626383137804-ff908d2753a2?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA2MTJ8MHwxfHNlYXJjaHw0fHxsdXh1cnklMjBoYWlyJTIwc2Fsb24lMjBpbnRlcmlvcnxlbnwwfHx8fDE3ODY3NjU3ODd8MA&ixlib=rb-4.1.0&q=85",
+      "description": "Luxury salon interior. Use as a background for the 'Explore Services' section with a heavy black overlay, or in the Gallery."
+    },
+    "service_spa": {
+      "url": "https://images.pexels.com/photos/6187418/pexels-photo-6187418.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+      "description": "Relaxing spa massage. Use for Spa service category."
+    },
+    "service_makeup_academy": {
+      "url": "https://images.unsplash.com/photo-1516975080664-ed2fc6a32937?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2Njl8MHwxfHNlYXJjaHwzfHxtYWtldXAlMjBhcnRpc3QlMjBicnVzaGVzfGVufDB8fHx8MTc4NjkxMzAzMHww&ixlib=rb-4.1.0&q=85",
+      "description": "Close up makeup brushes. Use for Academy section or general Makeup service."
+    },
+    "service_nails": {
+      "url": "https://images.unsplash.com/photo-1519014816548-bf5fe059798b?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxODd8MHwxfHNlYXJjaHwzfHxlbGVnYW50JTIwbWFuaWN1cmUlMjBuYWlsc3xlbnwwfHx8fDE3ODY5MTMwMzB8MA&ixlib=rb-4.1.0&q=85",
+      "description": "Pink manicure. Use for Nails service category."
+    }
+  },
+  "instructions_to_main_agent": [
+    "Design for mobile-first. Construct the bottom navigation bar (`fixed bottom-0 w-full`) and ensure main content has padding-bottom so it's not hidden behind the nav.",
+    "Enforce the Dark Luxury theme. The background MUST be #050505 or #0A0A0A. Cards should be #141414. Do NOT use bright or cheap gradients. Use primary pink (#E8A2A8) exclusively for CTAs, active states, and accents.",
+    "Typography MUST use 'Playfair Display' for Headings and 'Manrope' for body text. Headings must have tight tracking.",
+    "Do NOT use completely transparent backgrounds for the sticky header or bottom nav. Always use `backdrop-blur-xl` coupled with a semi-transparent color like `bg-[#050505]/80`.",
+    "For the Hero image, apply a gradient overlay like `bg-gradient-to-t from-[#050505] via-[#050505]/50 to-transparent` so white text stands out perfectly.",
+    "Add `data-testid` to all interactive elements (buttons, inputs, links, booking steps).",
+    "Use Framer Motion to add subtle entrance animations (e.g., `initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}`) to service cards and booking steps.",
+    "For admin dashboard, keep it in the same dark theme but utilize dense Shadcn UI components. Admin cards should be #141414 with white/muted text.",
+    "Do not use TSX. Create standard Javascript (.jsx/.js) files as per the project setup.",
+    "Avoid standard Vercel/Stripe looking components for the marketing page. Ensure components feel bespoke, feminine, and high-end."
+  ],
+  "UNIVERSAL_GUIDELINES_FOR_MAIN_AGENT": [
+    "You tend to converge toward generic, 'on distribution' outputs. Avoid this: make creative, distinctive frontends that surprise and delight.",
+    "Dark colors look good when used independently without gradients. DO NOT use dark colors as gradients.",
+    "Don't make generic centered layouts, simplistic gradients, and uniform styling.",
+    "Create depth through layered design elements with z-index hierarchy and soft shadow boundaries.",
+    "Use glass-morphism effects with backdrop filters (12-24px blur) for sticky overlays.",
+    "You MUST NOT apply universal transition (e.g. `transition: all`). Always add transitions for specific interactive elements.",
+    "You MUST NOT center align the app container (`.App { text-align: center; }`).",
+    "Always use modern button styles like pill-shaped (for marketing) with interaction animations.",
+    "NEVER use AI assistant Emoji characters for icons. Use Lucide React.",
+    "Every interaction needs micro-animations - hover states, transitions, entrance animations. Static = dead.",
+    "Use 2-3x more spacing than feels comfortable. Cramped designs look cheap.",
+    "Use `sonner` for toasts. It is located at `/app/src/components/ui/sonner.js` or `.jsx`.",
+    "Prioritize using pre-existing components from src/components/ui. Do not build Shadcn logic from scratch."
+  ]
+}

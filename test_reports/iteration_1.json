@@ -1,0 +1,53 @@
+{
+  "summary": "First-iteration E2E test of Crystal Makeover Salon & Academy. Backend: 21/21 pytest cases pass covering catalog, OTP auth, admin auth+role guard, availability, gender policy, double-booking prevention, mock payment, price snapshot immutability, review flow (only after COMPLETED, no duplicates), admin dashboard KPIs+7-day trend, admin CRUD, settings, remaining-payment, cancellation, cross-customer access forbidden, and SMS log persistence (BOOKING_CONFIRMATION + SERVICE_COMPLETED). Frontend: Home renders 7 categories + 6 featured, Services page renders, OTP login flow with dev_otp shown works, booking wizard completes end-to-end (service → date → slot → details → mock pay → /booking/success/:id), Admin login + all sidebar pages navigate. Fixed one runtime bug in admin pages: `useEffect(load, [])` was returning a Promise (React thought it was a cleanup fn, giving PAGEERROR: 'destroy is not a function' in AdminReviews and warnings in Dashboard/AdminServices/AdminBookings). Wrapped calls in arrow fn.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "/api/payments/create-order", "issue": "booking_id passed as query param instead of JSON body — works but atypical REST style"},
+      {"endpoint": "/api/admin/reviews/{rid}", "issue": "Uses untyped Dict[str,Any] body instead of Pydantic model (no validation)"},
+      {"endpoint": "/api/availability", "issue": "Server uses naive UTC (`now_utc().replace(tzinfo=None)`) for past-slot filtering; may mismatch actual salon local time in production (IST)"}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "AdminReviews (+ Dashboard, AdminServices, AdminBookings)", "issue": "useEffect(load, []) returned a Promise → 'destroy is not a function' PAGEERROR crashed AdminReviews. Fixed by wrapping in arrow function.", "selector": "n/a", "priority": "HIGH-FIXED"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Services page", "issues": ["'Engagement Look' Unsplash image (photo-1595872018818-97555653a011) resolves to an unrelated 'Drop your images here or browse' file-uploader UI screenshot — replace with a real bridal engagement photo"]},
+      {"screen": "Admin Dashboard", "issues": ["Recharts warns 'width(-1) height(-1)' repeatedly — ResponsiveContainer parent likely lacks explicit height on initial render; consider aspect ratio or fixed height"]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/backend_test.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "Replace the 'Engagement Look' service image URL — current Unsplash id renders a file-uploader screenshot, not bridal imagery.",
+    "Add explicit height (or aspect) to Recharts ResponsiveContainer wrappers on AdminDashboard to eliminate width(-1)/height(-1) warnings.",
+    "Consider migrating the endpoint POST /api/payments/create-order to accept booking_id in JSON body for consistency.",
+    "Consider timezone-awareness for availability: current past-slot cutoff assumes UTC server time equals salon local time."
+  ],
+  "critical_code_review_comments": [
+    "server.py is 1089 lines — split into modules (auth, catalog, bookings, payments, admin, sms) for maintainability.",
+    "In-memory OTP has no rate-limit on request-otp (only 5-attempt guard on verify) — production risk once real SMS is wired.",
+    "Payment 'verify' currently trusts any signature (fine for mock) but the comment must be enforced with HMAC when RAZORPAY_KEY_SECRET is present.",
+    "Race window between compute_slots and insert_one in _create_booking_doc is mitigated with an $expr conflict check — good; add a unique compound index or transactional upsert for stronger guarantees.",
+    "AdminReviews PATCH accepts arbitrary Dict; add Pydantic model to prevent field injection.",
+    "Frontend anti-pattern `useEffect(load, [])` (Promise-returning fn) was present in 4 pages — audit remaining `useEffect(<fn>, [])` usages."
+  ],
+  "updated_files": [
+    "/app/frontend/src/pages/admin/AdminReviews.jsx",
+    "/app/frontend/src/pages/Dashboard.jsx",
+    "/app/frontend/src/pages/admin/AdminServices.jsx",
+    "/app/frontend/src/pages/admin/AdminBookings.jsx",
+    "/app/backend/tests/backend_test.py"
+  ],
+  "success_rate": {"backend": "100% (21/21)", "frontend": "100% critical flows"},
+  "test_credentials": "Admin: crystalmakeoversalon@gmail.com / Admin@123. Customer: any phone; dev_otp returned by /api/auth/request-otp.",
+  "seed_data_creation": "Backend seeds on startup — no manual seeding required. Test suite creates fresh phone-based customers each run and one TEST_ service that is soft-deleted afterwards.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend test file at /app/backend/tests/backend_test.py covers full CRUD + booking lifecycle + gender policy + double-book + payment mock + review + SMS log. Runs against public URL from frontend/.env. All 21 pass. Playwright verified home/login/booking/admin. If retesting focuses on image fixes or Recharts sizing, only frontend smoke-check needed.",
+  "rca of the issue": "AdminReviews crashed on navigation because useEffect(load, []) passed a Promise-returning function. React destructures the return value expecting either undefined or a cleanup fn; a Promise is neither, causing 'destroy is not a function' when unmounting. Fixed by wrapping load() inside a synchronous arrow function so useEffect gets an undefined return. Same anti-pattern found and fixed in Dashboard, AdminServices, and AdminBookings."
+}
